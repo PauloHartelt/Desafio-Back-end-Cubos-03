@@ -5,28 +5,17 @@ const conexao = require("../conexao"),
 
 const pwd = securePassword();
 
-const validarCampo = campo => {
-  if (!campo) {
-    return res
-      .status(400)
-      .json({ mensagem: `O campo ${campo} é obrigatório. ` });
-  }
-};
-
-const verificarToken = campo => {
-  if (!campo) {
-    return res.status(401).json({
-      mensagem:
-        "Para acessar este recurso um token de autenticação válido deve ser enviado."
-    });
-  }
-};
-
 const cadastrarUsuario = async (req, res) => {
   const { nome, email, senha } = req.body;
-  validarCampo(nome);
-  validarCampo(email);
-  validarCampo(senha);
+  if (!nome) {
+    return res.status(400).json({ mensagem: "O campo nome é obrigatório." });
+  }
+  if (!email) {
+    return res.status(400).json({ mensagem: "O campo email é obrigatório." });
+  }
+  if (!senha) {
+    return res.status(400).json({ mensagem: "O campo senha é obrigatório." });
+  }
   try {
     const query = "SELECT * FROM usuarios WHERE email = $1";
     const { rowCount } = await conexao.query(query, [email]);
@@ -60,8 +49,12 @@ const cadastrarUsuario = async (req, res) => {
 
 const logarUsuario = async (req, res) => {
   const { email, senha } = req.body;
-  validarCampo(email);
-  validarCampo(senha);
+  if (!email) {
+    return res.status(400).json({ mensagem: "O campo email é obrigatório." });
+  }
+  if (!senha) {
+    return res.status(400).json({ mensagem: "O campo senha é obrigatório." });
+  }
   try {
     const { rowCount, rows } = await conexao.query(
       "SELECT * FROM usuarios WHERE email = $1",
@@ -113,7 +106,12 @@ const logarUsuario = async (req, res) => {
 
 const detalharUsuario = async (req, res) => {
   const { usuario } = req;
-  verificarToken(usuario);
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
   try {
     const { rows } = await conexao.query(
       "SELECT * FROM usuarios WHERE id = $1",
@@ -134,10 +132,21 @@ const detalharUsuario = async (req, res) => {
 const atualizarUsuario = async (req, res) => {
   const { usuario } = req;
   const { nome, email, senha } = req.body;
-  verificarToken(usuario);
-  validarCampo(nome);
-  validarCampo(email);
-  validarCampo(senha);
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
+  if (!nome) {
+    return res.status(400).json({ mensagem: "O campo nome é obrigatório." });
+  }
+  if (!email) {
+    return res.status(400).json({ mensagem: "O campo email é obrigatório." });
+  }
+  if (!senha) {
+    return res.status(400).json({ mensagem: "O campo senha é obrigatório." });
+  }
   try {
     let dados = await conexao.query("SELECT * FROM usuarios WHERE email = $1", [
       email
@@ -178,8 +187,8 @@ const excluirTransacao = async (req, res) => {
     }
 
     const { rowCount } = await conexao.query(
-      "DELETE FROM cadastro WHERE id =$1",
-      [id, usuario.id]
+      "DELETE FROM transacoes WHERE id =$1",
+      [id]
     );
 
     if (rowCount === 0) {
@@ -194,7 +203,12 @@ const excluirTransacao = async (req, res) => {
 
 const listarCategorias = async (req, res) => {
   const { usuario } = req;
-  verificarToken(usuario);
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
   try {
     const { rows } = await conexao.query("SELECT * FROM categorias");
     return res.status(200).json(rows);
@@ -203,37 +217,44 @@ const listarCategorias = async (req, res) => {
   }
 };
 
+//http://localhost:3000/transacao?filtro[]=Vendas&filtro[]=Transporte
+
 const listarTransacoes = async (req, res) => {
   const { usuario } = req;
   const { filtro } = req.query;
-  verificarToken(usuario);
-  if (Array.isArray(filtro) === false || filtro.length === 0) {
-    return res.status(400).json({ mensagem: "Filtro inválido" });
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
+
+  try {
+    const filtragem = [];
+    if (filtro) {
+      const query =
+        "SELECT t.id, t.tipo, t.descricao, t.valor, t.data, t.usuario_id, t.categoria_id, c.descricao AS categoria_nome FROM transacoes t LEFT JOIN categorias c ON t.categoria_id = c.id WHERE t.usuario_id = $1 AND c.descricao ILIKE $2";
+
+      for (const elemento of filtro) {
+        const transacoes = await conexao.query(query, [usuario.id, elemento]);
+
+        filtragem.push(...transacoes.rows);
+      }
+    }
+    return res.status(200).json(filtragem);
+  } catch (error) {
+    return res.status(400).json({ mensagem: error.message });
   }
 };
-
-try {
-  if (filtro) {
-    const query =
-      "SELECT t.id, t.tipo, t.descricao, t.valor, t.data, t.usuario_id, t.categoria_id, c.descricao AS categoria_nome FROM transacoes t LEFT JOIN categorias c ON t.categoria_id = c.id WHERE t.usuario_id = $1 AND c.descricao ILIKE $2";
-
-    const filtragem = [];
-
-    for (const elemento of filtro) {
-      const transacoes = await conexao.query(query, [usuario.id, elemento]);
-
-      filtragem.push(...transacoes.rows);
-    }
-
-    return res.status(200).json(filtragem);
-  }
-} catch (error) {
-  return res.status(400).json({ mensagem: error.message });
-}
 const detalharTransacao = async (req, res) => {
   const { usuario } = req;
   const { id } = req.params;
-  verificarToken(usuario);
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
   if (!id) {
     return res.status(400).json({ mensagem: "O ID é obrigatório." });
   }
@@ -254,12 +275,31 @@ const detalharTransacao = async (req, res) => {
 const cadastrarTransacao = async (req, res) => {
   const { usuario } = req;
   const { descricao, valor, data, categoria_id, tipo } = req.body;
-  verificarToken(usuario);
-  validarCampo(descricao);
-  validarCampo(valor);
-  validarCampo(data);
-  validarCampo(categoria_id);
-  validarCampo(tipo);
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
+  if (!descricao) {
+    return res
+      .status(400)
+      .json({ mensagem: "O campo descricao é obrigatório." });
+  }
+  if (!valor) {
+    return res.status(400).json({ mensagem: "O campo valor é obrigatório." });
+  }
+  if (!data) {
+    return res.status(400).json({ mensagem: "O campo data é obrigatório." });
+  }
+  if (!categoria_id) {
+    return res
+      .status(400)
+      .json({ mensagem: "O campo categoria_id é obrigatório." });
+  }
+  if (!tipo) {
+    return res.status(400).json({ mensagem: "O campo tipo é obrigatório." });
+  }
   let tipoModificado = tipo.toLowerCase();
   if (tipoModificado !== "entrada" && tipoModificado !== "saida") {
     return res.status(400).json({
@@ -292,15 +332,34 @@ const atualizarTransacao = async (req, res) => {
   const { usuario } = req;
   const { id } = req.params;
   const { descricao, valor, data, categoria_id, tipo } = req.body;
-  verificarToken(usuario);
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
   if (!id) {
     return res.status(400).json({ mensagem: "O ID é obrigatório." });
   }
-  validarCampo(descricao);
-  validarCampo(valor);
-  validarCampo(data);
-  validarCampo(categoria_id);
-  validarCampo(tipo);
+  if (!descricao) {
+    return res
+      .status(400)
+      .json({ mensagem: "O campo descricao é obrigatório." });
+  }
+  if (!valor) {
+    return res.status(400).json({ mensagem: "O campo valor é obrigatório." });
+  }
+  if (!data) {
+    return res.status(400).json({ mensagem: "O campo data é obrigatório." });
+  }
+  if (!categoria_id) {
+    return res
+      .status(400)
+      .json({ mensagem: "O campo categoria_id é obrigatório." });
+  }
+  if (!tipo) {
+    return res.status(400).json({ mensagem: "O campo tipo é obrigatório." });
+  }
   let tipoModificado = tipo.toLowerCase();
   if (tipoModificado !== "entrada" && tipoModificado !== "saida") {
     return res.status(400).json({
@@ -343,7 +402,12 @@ const atualizarTransacao = async (req, res) => {
 
 const obterExtrato = async (req, res) => {
   const { usuario } = req;
-  verificarToken(usuario);
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem:
+        "Para acessar este recurso um token de autenticação válido deve ser enviado."
+    });
+  }
   try {
     const { rows } = await conexao.query(
       "SELECT * FROM transacoes WHERE usuario_id = $1",
