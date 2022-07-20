@@ -3,18 +3,17 @@ const connection = require("../connection"),
   jwt = require("jsonwebtoken");
 const pwd = securePassword();
 
+const {
+  userValidation,
+  loginValidation,
+  transactionValidation
+} = require("../validations/validationSchema");
+
 const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
-  if (!name) {
-    return res.status(400).json({ message: "The name field is required." });
-  }
-  if (!email) {
-    return res.status(400).json({ message: "The email field is required." });
-  }
-  if (!password) {
-    return res.status(400).json({ message: "The password field is required." });
-  }
   try {
+    userValidation.validate(req.body);
+
     const query = "SELECT * FROM users WHERE email = $1";
     const { rowCount } = await connection.query(query, [email]);
 
@@ -52,6 +51,7 @@ const loginUser = async (req, res) => {
     return res.status(400).json({ message: "The password field is required." });
   }
   try {
+    loginValidation.validate(req.body);
     const { rowCount, rows } = await connection.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
@@ -132,16 +132,9 @@ const updateUser = async (req, res) => {
         "To access this resource a valid authentication token must be sent."
     });
   }
-  if (!name) {
-    return res.status(400).json({ message: "The name field is required." });
-  }
-  if (!email) {
-    return res.status(400).json({ message: "The email field is required." });
-  }
-  if (!password) {
-    return res.status(400).json({ message: "The password field is required." });
-  }
   try {
+    userValidation.validate(req.body);
+
     let data = await connection.query("SELECT * FROM users WHERE email = $1", [
       email
     ]);
@@ -273,25 +266,7 @@ const registerTransaction = async (req, res) => {
         "To access this resource a valid authentication token must be sent."
     });
   }
-  if (!description) {
-    return res
-      .status(400)
-      .json({ message: "The description field is mandatory." });
-  }
-  if (!value) {
-    return res.status(400).json({ message: "The value field is mandatory." });
-  }
-  if (!date) {
-    return res.status(400).json({ message: "The date field is mandatory." });
-  }
-  if (!category_id) {
-    return res
-      .status(400)
-      .json({ message: "The category_id field is required." });
-  }
-  if (!type) {
-    return res.status(400).json({ message: "The type field is mandatory." });
-  }
+
   let modifiedType = type.toLowerCase();
   if (modifiedType !== "input" && modifiedType !== "output") {
     return res.status(400).json({
@@ -299,6 +274,8 @@ const registerTransaction = async (req, res) => {
     });
   }
   try {
+    transactionValidation.validate(req.body);
+
     const categories = await connection.query(
       "SELECT * FROM categories WHERE id = $1",
       [category_id]
@@ -333,25 +310,7 @@ const updateTransaction = async (req, res) => {
   if (!id) {
     return res.status(400).json({ message: "The ID is required." });
   }
-  if (!description) {
-    return res
-      .status(400)
-      .json({ message: "The description field is mandatory." });
-  }
-  if (!value) {
-    return res.status(400).json({ message: "The value field is mandatory." });
-  }
-  if (!date) {
-    return res.status(400).json({ message: "The date field is mandatory." });
-  }
-  if (!category_id) {
-    return res
-      .status(400)
-      .json({ message: "The category_id field is required." });
-  }
-  if (!type) {
-    return res.status(400).json({ message: "The type field is mandatory." });
-  }
+
   let modifiedType = type.toLowerCase();
   if (modifiedType !== "input" && modifiedType !== "output") {
     return res.status(400).json({
@@ -359,6 +318,8 @@ const updateTransaction = async (req, res) => {
     });
   }
   try {
+    transactionValidation.validate(req.body);
+
     const { rows } = await connection.query(
       "SELECT * FROM transactions WHERE id = $1 AND user_id = $2",
       [id, user.id]
