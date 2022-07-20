@@ -2,55 +2,55 @@ CREATE DATABASE
   dindin;
 
 DROP TABLE
-  IF EXISTS usuarios;
+  IF EXISTS users;
 
 CREATE TABLE
-  usuarios (
+  users (
     id SERIAL PRIMARY KEY NOT NULL,
-    nome VARCHAR(60),
+    name VARCHAR(60),
     email VARCHAR(60) UNIQUE,
-    senha TEXT
+    password TEXT
   );
 
 DROP TABLE
-  IF EXISTS categorias;
+  IF EXISTS categories;
 
 CREATE TABLE
-  categorias (id SERIAL PRIMARY KEY NOT NULL, descricao TEXT);
+  categories (id SERIAL PRIMARY KEY NOT NULL, description TEXT);
 
 DROP TABLE
-  IF EXISTS transacoes;
+  IF EXISTS transactions;
 
 CREATE TABLE
-  transacoes (
+  transactions (
     id SERIAL PRIMARY KEY NOT NULL,
-    descricao TEXT,
-    valor INT,
-    data TEXT,
-    categoria_id INT,
-    usuario_id INT,
-    tipo TEXT,
-    FOREIGN KEY (categoria_id) REFERENCES categorias(id),
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    description TEXT,
+    value INT,
+    date TEXT,
+    category_id INT,
+    user_id INT,
+    type TEXT,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
 INSERT INTO
-  categorias (descricao)
+  categories (description)
 VALUES
-  ('Alimentação'),
-  ('Assinaturas e Serviços'),
-  ('Casa'),
-  ('Mercado'),
-  ('Cuidados Pessoais'),
-  ('Educação'),
-  ('Família'),
-  ('Lazer'),
+  ('Food'),
+  ('Subscriptions and Services'),
+  ('Home'),
+  ('Market'),
+  ('Personal cares'),
+  ('Education'),
+  ('Family'),
+  ('Leisure'),
   ('Pets'),
-  ('Presentes'),
-  ('Roupas'),
-  ('Saúde'),
-  ('Transporte'),
-  ('Salário'),
-  ('Vendas'),
-  ('Outras receitas'),
-  ('Outras despesas');
+  ('Gifts'),
+  ('Clothes'),
+  ('Health'),
+  ('Transport'),
+  ('Salary'),
+  ('Sales'),
+  ('Other recipes'),
+  ('Other expenses');
