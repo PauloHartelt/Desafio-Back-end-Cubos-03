@@ -33,7 +33,7 @@ routes.get("/category", listCategories);
 
 routes.get("/transaction", listTransactions);
 
-routes.get("/transaction/extrato", getExtract);
+routes.get("/transaction/extract", getExtract);
 
 routes.get("/transaction/:id", detailTransaction);
 
